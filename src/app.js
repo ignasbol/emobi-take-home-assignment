@@ -55,6 +55,12 @@ app.delete('/report/:reportId', (req, res) => {
   res.json({message: 'Report cancelled', reportId});
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
+app.closeServer = () => {
+  server.close();
+};
+
+export default app;
