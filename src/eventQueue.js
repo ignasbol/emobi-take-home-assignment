@@ -6,7 +6,7 @@ const REDIS_SERVER = 'redis://127.0.0.1:6379';
 const eventQueue = new Queue('eventQueue', REDIS_SERVER);
 const queueEvents = new QueueEvents('eventQueue');
 
-const worker = new Worker(
+new Worker(
   'eventQueue',
   async (job) => {
     const {reportId, reportData} = job.data;
