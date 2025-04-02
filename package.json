@@ -22,6 +22,7 @@
   "homepage": "https://github.com/ignasbol/emobi-take-home-assignment#readme",
   "dependencies": {
     "bullmq": "^5.45.2",
+    "cron": "^4.1.3",
     "eslint-plugin-jest": "^28.11.0",
     "express": "^5.1.0",
     "uuid": "^11.1.0"
