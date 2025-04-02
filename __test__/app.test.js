@@ -25,6 +25,13 @@ jest.mock('bullmq', () => {
   };
 });
 
+jest.mock('cron'),
+  () => {
+    return {
+      CronJob: jest.fn(),
+    };
+  };
+
 afterAll(async () => {
   app.closeServer();
 });
@@ -46,6 +53,15 @@ describe('API tests', () => {
     expect(response.body.error).toBe('Data is required');
   });
 
+  it('should respond with time is required', async () => {
+    const response = await request(app).post('/report/create').send({
+      type: 'scheduled',
+      data: {},
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Time is required');
+  });
+
   it('should respond with invalid type', async () => {
     const response = await request(app).post('/report/create').send({
       type: 'invalid_type',
@@ -56,13 +72,29 @@ describe('API tests', () => {
   });
 
   let reportId;
-  it('should respond with report created', async () => {
+  it('should respond with report scheduled', async () => {
     const response = await request(app).post('/report/create').send({
       type: 'immediate',
       data: {},
     });
     expect(response.status).toBe(202);
-    expect(response.body.message).toBe('Report created');
+    expect(response.body.message).toBe(
+      'Report scheduled for immediate execution',
+    );
+
+    reportId = response.body.reportId;
+  });
+
+  it('should respond with report scheduled in the future', async () => {
+    const response = await request(app).post('/report/create').send({
+      type: 'scheduled',
+      time: '2059112372',
+      data: {},
+    });
+    expect(response.status).toBe(202);
+    expect(response.body.message).toBe(
+      'Report scheduled for Mon Apr 02 2035 00:39:32 GMT-0700 (Pacific Daylight Time)',
+    );
 
     reportId = response.body.reportId;
   });

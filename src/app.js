@@ -1,5 +1,5 @@
+import {CronJob} from 'cron';
 import express from 'express';
-import {Queue, Worker, QueueEvents} from 'bullmq';
 import {v4 as uuidv4} from 'uuid';
 import {eventQueue} from './eventQueue.js';
 
@@ -22,7 +22,7 @@ app.get('/report/status/:reportId', async (req, res) => {
 
   if (!reportId) return res.status(400).json({error: 'Report ID is required'});
 
-  // Retrieve report status
+  // Look up report based on ID, check if exists and get status
   const job = await eventQueue.getJob(reportId);
 
   if (!job) return res.status(404).json({error: 'Report not found'});
@@ -35,31 +35,50 @@ app.get('/report/status/:reportId', async (req, res) => {
   Params:
   - type - "immediate", "scheduled"
   - data
-  - time (optional) - execution time
+  - time (optional) - execution time as Unix timestamp
  */
 app.post('/report/create', async (req, res) => {
   const {type, data, time} = req.body;
 
   if (!type) return res.status(400).json({error: 'Type is required'});
   if (!data) return res.status(400).json({error: 'Data is required'});
+  if (type === 'scheduled' && !time)
+    return res.status(400).json({error: 'Time is required'});
   if (!TYPES.includes(type))
     return res.status(400).json({error: 'Invalid type'});
 
   const reportId = uuidv4();
+  let message = `Report scheduled`;
 
   // Process immediately
-  if (!time) {
+  if (type === 'scheduled') {
+    // Schedule processing
+    // TODO: determine input type
+    // TODO: parse date string
+    const scheduledDate = new Date(time * 1000);
+    new CronJob(
+      scheduledDate,
+      async () => {
+        await eventQueue.add(
+          'report',
+          {reportId, reportData: data},
+          {jobId: reportId},
+        );
+      },
+      null,
+      true,
+    );
+    message = `Report scheduled for ${scheduledDate}`;
+  } else {
     await eventQueue.add(
       'report',
       {reportId, reportData: data},
       {jobId: reportId},
     );
-    return res.status(202).json({message: 'Report created', reportId});
+    message = `Report scheduled for immediate execution`;
   }
 
-  //TODO: Schedule processing
-
-  res.json({message: 'Report created', reportId});
+  res.status(202).json({message, reportId});
 });
 
 app.delete('/report/:reportId', async (req, res) => {
@@ -67,7 +86,7 @@ app.delete('/report/:reportId', async (req, res) => {
 
   if (!reportId) return res.status(400).json({error: 'Report ID is required'});
 
-  // Look up report based on ID, check if exists and cancel.
+  // Look up report based on ID, check if exists and cancel
   const job = await eventQueue.getJob(reportId);
 
   if (!job) return res.status(404).json({error: 'Report not found'});
