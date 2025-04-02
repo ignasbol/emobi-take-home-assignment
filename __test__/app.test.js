@@ -6,7 +6,6 @@ jest.mock('bullmq', () => {
     Queue: jest.fn().mockImplementation(() => {
       return {
         add: jest.fn(),
-        on: jest.fn(),
         getJob: jest.fn().mockImplementation(() => {
           return {
             getState: () => {
@@ -15,6 +14,12 @@ jest.mock('bullmq', () => {
             remove: jest.fn(),
           };
         }),
+      };
+    }),
+    Worker: jest.fn(),
+    QueueEvents: jest.fn().mockImplementation(() => {
+      return {
+        on: jest.fn(),
       };
     }),
   };
