@@ -1,6 +1,25 @@
 import request from 'supertest';
 import app from '../src/app';
 
+jest.mock('bullmq', () => {
+  return {
+    Queue: jest.fn().mockImplementation(() => {
+      return {
+        add: jest.fn(),
+        on: jest.fn(),
+        getJob: jest.fn().mockImplementation(() => {
+          return {
+            getState: () => {
+              return 'completed';
+            },
+            remove: jest.fn(),
+          };
+        }),
+      };
+    }),
+  };
+});
+
 afterAll(async () => {
   app.closeServer();
 });
@@ -37,7 +56,7 @@ describe('API tests', () => {
       type: 'immediate',
       data: {},
     });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(202);
     expect(response.body.message).toBe('Report created');
 
     reportId = response.body.reportId;
