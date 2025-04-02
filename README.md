@@ -18,8 +18,8 @@
 
 1. Clone repository locally
 2. Run `npm install`
-3. Launch Redis ``
-4. Run `npm start` to launch the server
+3. Launch Redis `redis-server`
+4. Run `npm start` to launch the API server
 
 ## Testing
 
