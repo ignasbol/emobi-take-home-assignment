@@ -1,15 +1,12 @@
 import express from 'express';
 import {Queue, Worker, QueueEvents} from 'bullmq';
 import {v4 as uuidv4} from 'uuid';
-import {generateReport} from './reports.js';
+import {eventQueue} from './eventQueue.js';
 
 const TYPES = ['immediate', 'scheduled'];
-const REDIS_SERVER = 'redis://127.0.0.1:6379';
 
 const app = express();
 const port = process.env.PORT ?? '9000';
-const eventQueue = new Queue('eventQueue', REDIS_SERVER);
-const queueEvents = new QueueEvents('eventQueue');
 
 app.use(express.json());
 
@@ -78,33 +75,6 @@ app.delete('/report/:reportId', async (req, res) => {
   await job.remove();
   res.json({message: 'Report cancelled', reportId});
 });
-
-queueEvents.on('failed', ({jobId, failedReason}) => {
-  console.error(`Job ${jobId} failed ${failedReason}`);
-});
-
-queueEvents.on('completed', ({jobId}) => {
-  console.log(`Job ${jobId} completed successfully`);
-});
-
-const worker = new Worker(
-  'eventQueue',
-  async (job) => {
-    const {reportId, reportData} = job.data;
-
-    try {
-      console.log(`Processing report: ${reportId}`);
-
-      await generateReport(reportId, reportData);
-
-      console.log(`Report processed successfully: ${reportId}`);
-    } catch (error) {
-      console.error(`Error processing report: ${reportId}.`, error);
-      throw error;
-    }
-  },
-  {connection: REDIS_SERVER},
-);
 
 const server = app.listen(port, () => {
   console.log(`Listening on port ${port}`);
